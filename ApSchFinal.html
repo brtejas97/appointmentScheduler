@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            Appointment scheduler
+        </title>
+        
+        <style>
+            
+            #body{background-image:url('https://img.freepik.com/free-photo/composition-with-stethoscope-clipboard_23-2147652319.jpg?w=1366&l=720');}
+            hr{
+                border-color: rgb(78, 71, 71);
+            }
+            #bttn{
+                text-align: right;
+            }
+        </style>
+    </head>
+    <body id="body">
+        <div id="root"  >
+
+        </div>
+
+        <script src="./js/react.development.js"></script>
+        <script src="./js/react-dom.development.js"></script>
+        <script src="./js/babel.js"></script>
+        
+        <script type="text/babel">
+            const rootHandler=document.getElementById('root')
+            const {useState,reactFragments,useEffect}=React
+            // const errors={}
+
+            const TableGenerator=(props)=>{
+                const {appointments,handleRemove,handleIsCompleted}=props
+                const [completed,setCompleted]=useState(false)
+                // console.log(appointments)
+                return (<div>
+                    <table border='1px'>
+                        <thead>
+                            <tr>
+                                <th>#</th>    
+                                <th>NAME</th>    
+                                <th>MOBILE</th>    
+                                <th>PURPOSE</th>    
+                                <th>DATE</th>    
+                                <th>COMPLETED</th>    
+                                <th>ACTIONS</th>    
+                            </tr>    
+                        </thead>  
+                        <tbody>
+                            {
+                                appointments.map((ele,i)=>{
+                                    return (
+                                        <tr key={ele.id} style={{backgroundColor:(ele.purpose=='emergency'||ele.purpose=='urgent') && 'rgb(255, 184, 77)'}}>
+                                            <td >{i+1}</td>    
+                                            <td> <b>{ele.name.toUpperCase()}</b> </td>    
+                                            <td>{ele.mobile}</td>    
+                                            <td>{ele.purpose}</td>    
+                                            <td>{ele.date}</td>  
+                                            <td> <input type="checkbox" checked={ele.isCompleted} onChange={()=>handleIsCompleted(ele.id)}/> </td>  
+                                            <td> <button onClick={()=>handleRemove(ele.id,ele.name)}>Cancel Appointment</button> </td>
+                                        </tr>
+                                    )
+                                })
+                            }
+                        </tbody>  
+                    </table>
+                    <br/>
+                </div>
+                )
+            }
+
+            const FilterComponent=(props)=>{
+                const {handleFilterComp,handleIsCompleted,handleRemove,appointments,fltrType}=props
+                const [hoverStatus,setHoverStatus] = useState(false)
+
+                const crDt=new Date().getDate(),crMt=new Date().getMonth()+1,crYr=new Date().getFullYear()
+                const today=`${crYr}-${crMt<10?`0${crMt}`:`${crMt}`}-${crDt<10?`0${crDt}`:`${crDt}`}`
+                const tomorrow=`${crYr}-${crMt<10?`0${crMt}`:`${crMt}`}-${crDt+1<10?`0${crDt+1}`:`${crDt+1}`}`
+                // console.log(today,tomorrow)
+
+                const handleChange=(e)=>{
+                    handleFilterComp(e.target.value)
+                }
+
+                const handleHover=()=>{
+                    setHoverStatus(true)
+                }
+
+                const handleOut=()=>{
+                    setHoverStatus(false)
+                }
+
+                return(
+                    <div>
+                        <b>Filter by: </b> &nbsp;
+                        <label htmlFor="overDue" onMouseOver={handleHover} onMouseOut={handleOut}>OverDue</label><input type="radio" checked={fltrType=='overDue'} value='overDue' name="filter" onChange={handleChange} id="overDue"/> {hoverStatus && <span style={{fontSize:'12px'}}> <b> (overdue-unattended) </b> &nbsp;&nbsp;&nbsp;&nbsp; </span> } &nbsp;
+
+                        <label htmlFor="today">Today</label><input type="radio" checked={fltrType==today} value={today} name="filter" onChange={handleChange} id="today"/> &nbsp;
+
+                        <label htmlFor="tomorrow">Tomorrow</label><input type="radio" checked={fltrType==tomorrow} value={tomorrow} name="filter" onChange={handleChange} id="tomorrow"/> &nbsp; 
+
+                        <label htmlFor="completed">Completed</label><input type="radio" checked={fltrType=='completed'} value='completed' name="filter" onChange={handleChange} id="completed"/> &nbsp; 
+
+                        <label htmlFor="pending">Pending</label><input type="radio" checked={fltrType=='pending'} value='pending' name="filter" onChange={handleChange} id="pending"/> &nbsp; 
+
+                        <label htmlFor="emergency">Emergency</label><input type="radio" checked={fltrType=='emergency'} value='emergency' name="filter" onChange={handleChange} id="emergency"/> &nbsp; 
+
+                        <input type="button"  value='clear filter' name="filter" onClick={handleChange} id="ClearFilter"/> &nbsp; 
+                        
+                        <br/>
+
+                        {((appointments.length==0)&&(fltrType=='completed'||fltrType==today||fltrType==tomorrow||fltrType=='overDue'||fltrType=='emergency')) && ( <div> <br/> <b style={{color:'rgb(230, 0, 0)'}}>---nothing found---</b> <hr/> </div>) }
+
+                        {appointments.length > 0 && (
+                            <div>
+                                <SubTitle title={`Listing '${fltrType}' appointment/s (${appointments.length})`} />
+                                <TableGenerator appointments={appointments} handleIsCompleted={handleIsCompleted} handleRemove={handleRemove}/>
+                                
+                                
+
+                                <hr/>
+                            </div>)
+                        }
+                    </div>
+                )
+            }
+
+            const SearchComponent=(props)=>{
+                const {handleSearchComp,appointments,handleIsCompleted,handleRemove,searchText}=props
+                let caution
+
+                const handleScanText=(e)=>{
+                    handleSearchComp(e.target.value)
+                }
+
+                if(searchText!='' && appointments.length==0){
+                    caution=true
+                }
+
+                return(
+                    <div>
+                        <label > <b>Run a search: </b> </label> &nbsp;
+                        <input type="text" value={searchText} placeholder='search by name / date / mobile' onChange={handleScanText} />{caution &&( 
+                            <fragments>
+                                <span style={{color:'RGB(230,0,0)',fontSize:'12px'}}> <b> make sure to enter right characters </b></span>
+                                <hr/>
+                            </fragments>) }
+                        
+                        
+
+                        {appointments.length>0 &&
+                            (<div>
+                                <SubTitle title={`Listing retrived- ${appointments.length}`} />
+                                <TableGenerator appointments={appointments} handleIsCompleted={handleIsCompleted} handleRemove={handleRemove} />
+                                <hr/>
+                            </div>) }
+                    </div>
+                )
+            }
+
+            const AppointmentForm=(props)=>{
+                const {handleAdd}=props
+                const [name,setName] = useState('')
+                const [mobile,setMobile] = useState('')
+                const [purpose,setPurpose] = useState('')
+                const [date,setDate] = useState('')
+                const [formErrors,setFormErrors]=useState({})
+                const errors={}
+
+                const dateToday=()=>{
+                    const today=new Date()
+                    let dd,mm,yyyy
+                    dd=today.getDate()
+                    mm=today.getMonth()+1
+                    yyyy=today.getFullYear()
+                    return `${yyyy}-${mm<10?'0'+mm:mm}-${dd<10?'0'+dd:dd}`
+                }
+
+                const runValidation=()=>{
+                    if(name.length===0){
+                        errors.name=`Name section can't be left blank`
+                    }
+                    if(mobile.length===0){
+                        errors.mobile=`Mobile section can't be left blank`
+                    }
+                    else if(mobile.length!==10){
+                        errors.mobile=`Please enter a 10 DIGIT valid mobile number`
+                    }
+                    if(date===''){
+                        errors.date='Please select a date'
+                    }
+                }
+
+                const handleSubmit=(e)=>{
+                    e.preventDefault()
+                    
+                    runValidation()
+                    // console.log(errors)
+                    if(Object.keys(errors).length===0){
+                        setFormErrors({})
+                        const result={
+                            id: Number(new Date()),
+                            name:name,
+                            mobile:mobile,
+                            purpose:purpose,
+                            date:date,
+                            isCompleted: false
+                        }
+                        // console.log(result)
+                        handleAdd(result)
+                        alert(`New appointment in the name of "${name.toUpperCase()}" created successfully`)
+                        setName('')
+                        setMobile('')
+                        setPurpose('')
+                        setDate('')
+                    }
+                    else{
+                        setFormErrors(errors)
+                    }
+                }
+
+                const handleChange=(e)=>{
+                    const attr=e.target.name
+                    if(attr==='name'){
+                        setName(e.target.value)
+                    }
+                    else if(attr==='mobile'){
+                        setMobile(e.target.value)
+                    }
+                    else if(attr==='purpose'){
+                        setPurpose(e.target.value)
+                    }
+                    else if(attr==='date'){
+                        setDate(e.target.value)
+                    }
+                }
+
+                return(
+                    <div>
+                        <SubTitle title={`Create an appointment`}/>
+                        <form onSubmit={handleSubmit}>
+                            <label>Name:</label><br/>
+                            <input type="text" name='name' value={name} onChange={handleChange}/> &nbsp; {formErrors.name && <span style={{color:'RGB(230,0,0)'}}>{formErrors.name}</span>} <br/><br/> 
+                            
+                            <label>Mobile:</label><br/>
+                            <input type="number" name='mobile' value={mobile} onChange={handleChange}/> &nbsp; {formErrors.mobile && <span style={{color:'RGB(230,0,0)'}}>{formErrors.mobile}</span>} <br/><br/>
+
+                            <label>Purpose:</label><br/>
+                            <textarea name='purpose' placeholder='specify "emergency" / "urgent" only if necessary' value={purpose} onChange={handleChange} cols="30" rows="3"></textarea> <br/><br/>
+
+                            <label>Date:</label><br/>
+                            <input type="date" min={dateToday()} name='date' value={date} onChange={handleChange}/> &nbsp; {formErrors.date && <span style={{color:'RGB(230,0,0)'}}>{formErrors.date}</span>} <br/><br/>
+
+                            <input type="submit" value="Create"/>
+                        </form>    
+                    </div>
+                )
+            }
+
+            const AppointmentContainer=(props)=>{
+                const {appointments,handleAdd,handleRemove,handleIsCompleted,handleSort}=props
+
+                const handleChange=(e)=>{
+                    handleSort(e.target.value)
+                }
+
+                return(
+                    <div>
+                    <SubTitle title={`Total appointments- ${appointments.length}`} />
+
+                    <b>Sort-by: </b> &nbsp;
+                    <label htmlFor="recAdd">Recent addition</label><input type="radio" name='sort' onChange={handleChange} value='recAdd' id='recAdd'/> &nbsp;&nbsp;&nbsp; 
+                    <label htmlFor="dateAsc">Date wise(↓)</label><input type="radio" name='sort' onChange={handleChange} value='dateAsc' id='dateAsc'/> &nbsp;&nbsp;&nbsp;
+                    <label htmlFor="dateDes">Date wise(↑)</label><input type="radio" name='sort' onChange={handleChange} value='dateDes' id='dateDes'/>  <br/> <br/>
+                    
+                    {appointments.length>0 && <TableGenerator appointments={appointments} handleRemove={handleRemove} handleIsCompleted={handleIsCompleted} />}
+                    <hr/>
+                    <AppointmentForm handleAdd={handleAdd}/>
+                    </div>
+                )
+            }
+
+            const SubTitle=(props)=>{
+                const {title}=props
+                return (
+                    <h2>{title}</h2>
+                )
+            }
+
+            const Title=(props)=>{
+                const {name}=props
+                return(
+                    <div>
+                        <button style={{float:'right'}} onClick={()=>window.location.reload()}>refresh</button>
+                        <h1>{name}</h1>
+                        <hr/>
+                    </div>
+                )
+            }
+
+            const App=(props)=>{
+                const [appointments,setAppointments]=useState(localStorage.getItem('appointments')?JSON.parse(localStorage.getItem('appointments')):[])
+                const [searchText,setSearchText]=useState('')
+                const [searchList,setSearchList]=useState([])
+                const [fltrType,setFltrType]=useState('')
+                const [fltrList,setFltrList]=useState([])
+
+                // console.log(appointments.sort().reverse())
+                useEffect(()=>{
+                    localStorage.setItem('appointments',JSON.stringify(appointments))
+                },[appointments])
+
+                const handleSort=(sortType)=>{
+                    // console.log(sortType)
+                    if(sortType=='recAdd'){
+                        const result=[],finalArr=[]
+                        appointments.forEach((ele)=>{
+                            result.push([ele.id,ele])
+                        })
+                        const newArr=result.sort().reverse()
+                        // console.log(newArr)
+                        newArr.forEach((ele1)=>{
+                            finalArr.push(ele1[1])
+                        })
+                        setAppointments([...finalArr])
+                    }
+                    else if(sortType=='dateAsc'){
+                        const result=[],sortList=[]
+                        appointments.forEach((ele)=>{
+                            // console.log(Number(ele.date.split('-')[1]),Number(ele.date.split('-')[2]))
+                            const dateSum = Number(ele.date.split('-')[1])+Number(ele.date.split('-')[2])+Number(ele.date.split('-')[0])
+                            result.push([dateSum,ele])
+                        })
+                        console.log(result.sort())
+                        const finalArr=(result.sort())
+                        finalArr.forEach((ele)=>{
+                            sortList.push(ele[1])
+                        })
+                        setAppointments(sortList)
+                    }
+                    else if(sortType=='dateDes'){
+                        const result=[],sortList=[]
+                        appointments.forEach((ele)=>{
+                            const dateSum = Number(ele.date.split('-')[1])+Number(ele.date.split('-')[2])+Number(ele.date.split('-')[0])
+                            result.push([dateSum,ele])
+                        })
+                        const finalArr=(result.sort().reverse())
+                        finalArr.forEach((ele)=>{
+                            sortList.push(ele[1])
+                        })
+                        setAppointments(sortList)
+                    }
+                }
+
+                const handleFilterComp=(flTyp)=>{
+                        // console.log(flTyp)
+                        setFltrType(flTyp)
+                        const result=appointments.filter((ele)=>{
+                            if(flTyp==ele.date){
+                                return ele
+                            }
+                            else if(flTyp=='completed'){
+                                if(ele.isCompleted){
+                                    return ele
+                                }
+                            }
+                            else if(flTyp=='pending'){
+                                if(!ele.isCompleted){
+                                    return ele
+                                }
+                            }
+                            else if(flTyp=='overDue'){
+                                const crDt=new Date().getDate(),crMt=new Date().getMonth()+1,crYr=new Date().getFullYear()
+                                const today=`${crYr}-${crMt<10?`0${crMt}`:`${crMt}`}-${crDt<10?`0${crDt}`:`${crDt}`}`
+                
+                                if(ele.date.split('-')[2]<today.split('-')[2]&&!ele.isCompleted){
+                                    return ele
+                                }
+                            }
+                            else if(flTyp=='emergency'){
+                                if(ele.purpose.includes('emergency')||ele.purpose.includes('urgent')){
+                                    return ele
+                                }
+                            }
+                            else if(flTyp=='clear'){
+                                return null
+                            }
+                        })
+                        // console.log(result)
+                        setFltrList(result)
+                }
+
+                const handleSearchComp=(text)=>{
+                    // console.log(text)
+                    setSearchText(text)
+
+                    if(text.trim().length>0){
+                        const result=appointments.filter((ele)=>{
+                            return ele.name.includes(text)||ele.mobile.includes(text)||ele.date.includes(text)
+                        })
+                        // console.log(result)
+                        setSearchList(result)
+                    }
+                    else{
+                        setSearchList([])
+                    }
+                }
+                // console.log(searchList)
+
+                const handleAdd=(result)=>{
+                    setAppointments([...appointments,result])
+                }
+
+                const handleRemove=(id,name)=>{
+                    const cnfrm=confirm(`Do you really want to cancel ${name.toUpperCase()}'s appointment?`)
+                    if(cnfrm){
+                        const result=appointments.filter((ele)=>{
+                            return ele.id!==id
+                        })
+                        setAppointments(result)
+
+                        const resultSrch=searchList.filter((ele)=>{
+                            return ele.id!==id
+                        })
+                        setSearchList(resultSrch)
+
+                        const resultFltr=fltrList.filter((ele)=>{
+                            return ele.id!==id
+                        })
+                        setFltrList(resultFltr)
+                    }
+                }
+
+                const handleIsCompleted=(id)=>{
+                    // console.log(typeof id)
+
+                    const resultFltr=fltrList.map((ele)=>{
+                        if(ele.id===id){
+                            return {...ele,isCompleted:!ele.isCompleted}
+                        }
+                        else{
+                            return {...ele}
+                        }
+                    })
+                    setFltrList(resultFltr)
+
+                    const resultSrch=searchList.map((ele)=>{
+                        if(ele.id===id){
+                            return {...ele,isCompleted:!ele.isCompleted}
+                        }
+                        else{
+                            return {...ele}
+                        }
+                    })
+                    setSearchList(resultSrch)
+
+                    const result=appointments.map((ele)=>{
+                        if(ele.id===id){
+                            return {...ele,isCompleted:!ele.isCompleted}
+                        }
+                        else{
+                            return {...ele}
+                        }
+                    })
+                    setAppointments(result)
+                }
+
+                const {name}=props
+                return(
+                    <div style={{fontFamily:'verdana'}}  class='flex-container'>
+                        <div >
+                            <Title name={name} />
+                            
+                            <SearchComponent handleSearchComp={handleSearchComp} appointments={searchList} handleIsCompleted={handleIsCompleted} searchText={searchText} handleRemove={handleRemove}/>
+                            
+                            <br/>
+                            
+                            <FilterComponent handleFilterComp={handleFilterComp} appointments={fltrList} handleIsCompleted={handleIsCompleted} fltrType={fltrType} handleRemove={handleRemove}/>
+                            
+                            </div>
+                            <div>
+                                <AppointmentContainer appointments={appointments} handleIsCompleted={handleIsCompleted}  handleRemove={handleRemove} handleAdd={handleAdd} handleSort={handleSort}/>
+                            </div>
+                    </div>
+                )
+            }
+
+            ReactDOM.render(<App name='Appointment Scheduler'/>,rootHandler)
+        </script>
+    </body>
+</html>
